@@ -11,23 +11,23 @@ class InMemoryFeedStore: FeedStore {
 		let timestamp: Date
 	}
 	
-	private var caches = [InMemoryFeedCache]()
+	private var cache: InMemoryFeedCache?
 	
 	func deleteCachedFeed(completion: @escaping DeletionCompletion) {
 		
 	}
 	
 	func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-		caches.append(InMemoryFeedCache(feed: feed, timestamp: timestamp))
+		cache = InMemoryFeedCache(feed: feed, timestamp: timestamp)
 		completion(nil)
 	}
 	
 	func retrieve(completion: @escaping RetrievalCompletion) {
-		guard !caches.isEmpty else {
+		guard let cache = cache else {
 			return completion(.empty)
 		}
 		
-		completion(.found(feed: caches.first!.feed, timestamp: caches.first!.timestamp))
+		completion(.found(feed: cache.feed, timestamp: cache.timestamp))
 	}
 }
 
@@ -82,9 +82,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 	
 	func test_insert_overridesPreviouslyInsertedCacheValues() throws {
-//		let sut = try makeSUT()
-//
-//		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
+		let sut = try makeSUT()
+
+		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
 	}
 	
 	func test_delete_deliversNoErrorOnEmptyCache() throws {
