@@ -17,24 +17,33 @@ public class InMemoryFeedStore: FeedStore {
 	}
 	
 	private var cache: InMemoryFeedCache?
+	private let queue = DispatchQueue(label: "\(InMemoryFeedStore.self)Queue", qos: .userInitiated)
 	
 	public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-		guard cache != nil else { return completion(nil) }
-		cache = nil
-		completion(nil)
+		queue.async(flags: .barrier) {
+			guard self.cache != nil else { return completion(nil) }
+			self.cache = nil
+			completion(nil)
+		}
 	}
 	
 	public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-		cache = InMemoryFeedCache(feed: feed, timestamp: timestamp)
-		completion(nil)
+		queue.async(flags: .barrier) {
+			
+			self.cache = InMemoryFeedCache(feed: feed, timestamp: timestamp)
+			completion(nil)
+		}
 	}
 	
 	public func retrieve(completion: @escaping RetrievalCompletion) {
-		guard let cache = cache else {
-			return completion(.empty)
+		queue.async {
+			
+			guard let cache = self.cache else {
+				return completion(.empty)
+			}
+			
+			completion(.found(feed: cache.feed, timestamp: cache.timestamp))
 		}
-		
-		completion(.found(feed: cache.feed, timestamp: cache.timestamp))
 	}
 }
 
